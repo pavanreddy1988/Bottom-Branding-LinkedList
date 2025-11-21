@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EP Template Linklist Generator — Modern UI</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-green-100 p-8 text-gray-800">
+
+<div class="max-w-4xl mx-auto" x-data="linkGen()">
+
+  <h1 class="text-3xl font-bold mb-6 text-center">EP Template Linklist Generator</h1>
+
+  <div class="flex gap-4 mb-6">
+    <button @click="addParent()" class="px-4 py-2 bg-white shadow rounded-lg hover:bg-gray-50">➕ Add Parent</button>
+    <button @click="generate()" class="px-4 py-2 bg-green-600 text-white shadow rounded-lg hover:bg-green-700">Generate Script</button>
+    <button @click="copyOutput()" class="px-4 py-2 bg-blue-600 text-white shadow rounded-lg hover:bg-blue-600">Copy Output</button>
+  </div>
+
+  <!-- Parent Blocks -->
+  <template x-for="parent in parents" :key="parent.id">
+    <div class="bg-white shadow-lg rounded-xl p-5 mb-4 border">
+      <div class="flex justify-between items-center mb-3">
+        <label class="font-semibold text-lg">Parent Header</label>
+        <button @click="removeParent(parent.id)" class="text-red-600 font-bold">✖</button>
+      </div>
+      <input x-model="parent.header" class="w-full border p-2 rounded mb-4" placeholder="Parent header..." />
+
+      <h3 class="font-medium mb-2">Child Items</h3>
+      <template x-for="child in parent.children" :key="child.id">
+        <div class="flex gap-3 mb-3 items-center">
+          <input x-model="child.label" class="w-1/3 border p-2 rounded" placeholder="Label" />
+          <input x-model="child.url" class="w-2/3 border p-2 rounded" placeholder="URL https://..." />
+          <button @click="removeChild(parent.id, child.id)" class="text-red-600 font-bold">✖</button>
+        </div>
+      </template>
+
+      <button @click="addChild(parent.id)" class="px-3 py-1 bg-red-100 rounded hover:bg-gray-300 mt-2">Add Child</button>
+    </div>
+  </template>
+
+  <!-- Output -->
+  <h2 class="text-xl font-semibold mt-6 mb-2">Generated Output</h2>
+  <textarea x-model="output" readonly class="w-full h-72 border p-3 rounded bg-gray-50 font-mono"></textarea>
+
+</div>
+
+<script>
+function linkGen() {
+  return {
+    parents: [],
+    output: "",
+
+    addParent() {
+      this.parents.push({ id: Date.now() + Math.random(), header: "", children: [] });
+    },
+
+    removeParent(pid) {
+      this.parents = this.parents.filter(p => p.id !== pid);
+    },
+
+    addChild(pid) {
+      const parent = this.parents.find(p => p.id === pid);
+      if (parent) parent.children.push({ id: Date.now() + Math.random(), label: "", url: "" });
+    },
+
+    removeChild(pid, cid) {
+      const parent = this.parents.find(p => p.id === pid);
+      if (parent) parent.children = parent.children.filter(c => c.id !== cid);
+    },
+
+    generate() {
+      const columns = this.parents.map(p => ({
+        header: p.header.trim(),
+        linklist: p.children
+          .filter(c => c.label.trim() && c.url.trim())
+          .map(c => ({ label: c.label.trim(), URL: this.normalizeURL(c.url.trim()) }))
+      }));
+
+      const obj = {
+        width: "1000px",
+        mainHeader: "",
+        imgOverride: "",
+        columns: columns
+      };
+
+      const json = JSON.stringify(obj, null, 4);
+      this.output = `<script type=\"eptemplate/linklist\">${json}<\/script>`;
+    },
+
+    normalizeURL(url) {
+      return /^[a-zA-Z]+:\/\//.test(url) ? url : `https://${url}`;
+    },
+
+    copyOutput() {
+      navigator.clipboard.writeText(this.output).then(() => alert("Copied to clipboard."));
+    }
+  };
+}
+</script>
+
+</body>
+</html>

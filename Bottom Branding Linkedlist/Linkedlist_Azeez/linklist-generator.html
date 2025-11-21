@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EP Template Linklist Generator</title>
+
+<style>
+body { font-family: Arial; padding: 20px; }
+.parent-box { border:1px solid #888; padding:12px; margin-bottom:12px; background:#f7f7f7; }
+.child-row { margin:6px 0; }
+textarea { width:100%; height:350px; font-family:monospace; }
+.remove-btn { background:#d9534f; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<h2>EP Template Linklist Generator</h2>
+
+<button id="addParent">➕ Add Parent</button>
+<button id="generate">Generate Script</button>
+
+<div id="parents" style="margin-top:20px;"></div>
+
+<h3>Generated Output</h3>
+<textarea id="output" readonly></textarea>
+
+<!-- Load JS SAFELY -->
+<script src="./generator.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EP Template Linklist Generator</title>
+
+<style>
+body { font-family: Arial; padding: 20px; max-width:1000px; margin:auto; }
+.parent-box { border:1px solid #888; padding:12px; margin-bottom:12px; background:#f7f7f7; }
+.child-row { margin:6px 0; display:flex; gap:8px; align-items:center; }
+.child-row input { box-sizing:border-box; }
+textarea { width:100%; height:280px; font-family:monospace; }
+.remove-btn { background:#d9534f; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; }
+.btn { padding:8px 12px; margin-right:8px; border-radius:6px; border:1px solid #666; background:#eee; cursor:pointer; }
+.btn-primary { background:#0275d8; color:white; border:none; }
+.row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.small { font-size:0.9em; color:#555; }
+</style>
+</head>
+<body>
+
+<h2>EP Template Linklist Generator</h2>
+
+<div class="row">
+  <button id="addParent" class="btn">➕ Add Parent</button>
+  <button id="generate" class="btn btn-primary">Generate Script</button>
+  <button id="copyOutput" class="btn">Copy Output</button>
+  <span class="small">Add parents and children, then click Generate.</span>
+</div>
+
+<div id="parents" style="margin-top:10px;"></div>
+
+<h3>Generated Output</h3>
+<textarea id="output" readonly></textarea>
+
+<script>
+/* ---- State ---- */
+let parentCount = 0;
+let childCounts = {};
+
+/* ---- Helpers ---- */
+function q(id){ return document.getElementById(id); }
+function safeTrim(s){ return s ? s.trim() : ""; }
+
+/* ---- Add parent ---- */
+q("addParent").onclick = function () {
+    parentCount++;
+    childCounts[parentCount] = 0;
+
+    let box = document.createElement("div");
+    box.className = "parent-box";
+    box.id = "parent-" + parentCount;
+
+    box.innerHTML = `
+        <label><b>Parent Header:</b></label><br>
+        <input id="ph-${parentCount}" style="width:60%;" placeholder="Parent header..."><br><br>
+
+        <b>Child Items:</b>
+        <div id="child-list-${parentCount}"></div>
+
+        <div style="margin-top:8px;">
+          <button class="btn" onclick="addChild(${parentCount})">Add Child</button>
+          <button class="remove-btn" onclick="removeParent(${parentCount})">Delete Parent</button>
+        </div>
+    `;
+
+    q("parents").appendChild(box);
+};
+
+/* ---- Remove parent ---- */
+function removeParent(id) {
+    let el = q("parent-" + id);
+    if (el) el.remove();
+}
+
+/* ---- Add child ---- */
+function addChild(pid) {
+    childCounts[pid] = (childCounts[pid] || 0) + 1;
+    let cid = childCounts[pid];
+
+    let row = document.createElement("div");
+    row.className = "child-row";
+    row.id = `child-${pid}-${cid}`;
+
+    row.innerHTML = `
+        <input placeholder="Label" id="lbl-${pid}-${cid}" style="width:30%;" />
+        <input placeholder="URL https://..." id="url-${pid}-${cid}" style="width:60%;" />
+        <button class="remove-btn" onclick="removeChild(${pid},${cid})">X</button>
+    `;
+
+    q(`child-list-${pid}`).appendChild(row);
+}
+
+/* ---- Remove child ---- */
+function removeChild(pid, cid) {
+    let row = q(`child-${pid}-${cid}`);
+    if (row) row.remove();
+}
+
+/* ---- Generate output ---- */
+q("generate").onclick = function () {
+    let columns = [];
+
+    // iterate through known parent ids (1..parentCount)
+    for (let p = 1; p <= parentCount; p++) {
+        let headerEl = q("ph-" + p);
+        if (!headerEl) continue;
+        let headerVal = safeTrim(headerEl.value);
+        if (!headerVal) continue;
+
+        let children = [];
+        let max = childCounts[p] || 0;
+
+        for (let c = 1; c <= max; c++) {
+            let lbl = q(`lbl-${p}-${c}`);
+            let url = q(`url-${p}-${c}`);
+            if (lbl && url) {
+                let l = safeTrim(lbl.value);
+                let u = safeTrim(url.value);
+                if (l && u) {
+                    // normalise URL (basic)
+                    if (!u.match(/^[a-zA-Z]+:\/\//)) {
+                        u = "https://" + u;
+                    }
+                    children.push({ label: l, URL: u });
+                }
+            }
+        }
+
+        columns.push({ header: headerVal, linklist: children });
+    }
+
+    let obj = {
+        width: "1000px",
+        mainHeader: "",
+        imgOverride: "",
+        columns: columns
+    };
+
+    let json = JSON.stringify(obj, null, 4);
+
+    // IMPORTANT: escape the closing script tag so it does NOT terminate this outer <script>
+    let scriptText = "<script type=\"eptemplate/linklist\">" + json + "<\/script>";
+
+    q("output").value = scriptText;
+};
+
+/* ---- Copy button ---- */
+q("copyOutput").onclick = function () {
+    let out = q("output");
+    out.select();
+    try {
+        document.execCommand('copy');
+        alert("Copied to clipboard.");
+    } catch (err) {
+        alert("Copy failed — select and copy manually.");
+    }
+};
+
+/* ---- Make functions available to inline onclick attributes ---- */
+window.addChild = addChild;
+window.removeChild = removeChild;
+window.removeParent = removeParent;
+</script>
+
+</body>
+</html>
